@@ -3,12 +3,14 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/wobeproject/data"
+	"github.com/wobeproject/logger"
 	"github.com/wobeproject/util"
 )
+
+var l = logger.GetInstance()
 
 //InputHandler ...
 func InputHandler(w http.ResponseWriter, r *http.Request) {
@@ -21,23 +23,26 @@ func InputHandler(w http.ResponseWriter, r *http.Request) {
 
 	buf := bytes.NewBuffer(make([]byte, 0))
 	_, readErr := buf.ReadFrom(r.Body)
-	failOnError(readErr)
+	failOnError("reading resp body failed ", readErr)
 	body := buf.Bytes()
 	err := json.Unmarshal(body, &dataInput)
-	failOnError(err)
+	failOnError("json unmarshal failed ", err)
 
 	newString := util.ReverseString(dataInput.Input)
 
 	b, err := json.Marshal(data.InputData{
 		Input: newString,
 	})
-	failOnError(err)
+	failOnError("json marshal failed ", err)
 	w.Write(b)
 
 }
 
-func failOnError(err error) {
+func failOnError(msg string, err error) {
 	if err != nil {
-		log.Fatal("FAIL: ", err)
+		l.Error(msg, map[string]interface{}{
+			"ERR": err.Error(),
+		})
+
 	}
 }
