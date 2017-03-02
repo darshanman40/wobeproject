@@ -1,43 +1,45 @@
 package handlers
 
 import (
-	"bytes"
-	"encoding/json"
 	"io"
 	"net/http"
 
-	"github.com/wobeproject/data"
+	"github.com/wobeproject/logger"
 	"github.com/wobeproject/util"
 )
 
-type revHandlerJSONParser struct {
-	io.Writer
-	d data.InputData
+//Parser ...
+type Parser interface {
+	RequestParse(r *http.Request)
 }
 
-func (j *revHandlerJSONParser) requestParse(r *http.Request) {
-	l.Info("Content Type matched", map[string]interface{}{
-		"Content-Type": "application/json",
-	})
-	buf := bytes.NewBuffer(make([]byte, 0))
-	_, readErr := buf.ReadFrom(r.Body)
-	util.FailOnError("reading resp body failed ", readErr)
-	body := buf.Bytes()
-	err := json.Unmarshal(body, &j.d)
-	util.FailOnError("json unmarshal failed ", err)
-	l.Info("Reversing string", map[string]interface{}{
-		"original string": j.d.Input,
-	})
-	newString := util.ReverseString(j.d.Input)
+//revHandlerURLEncParser ...
+type revHandlerURLEncParser struct {
+	io.Writer
+}
 
-	b, err := json.Marshal(data.InputData{
-		Input: newString,
+func (j *revHandlerURLEncParser) RequestParse(r *http.Request) {
+	l.Info("Content Type matched", map[string]interface{}{
+		"Content-Type": r.Header.Get("Content-Type"),
 	})
-	//io.WriteString(j., s)
-	// util.FailOnError("json marshal failed ", err)
-	if b != nil {
-		j.Write(b)
-	} else {
-		io.WriteString(j, err.Error())
+
+	r.ParseForm()
+	input := r.Form.Get("input")
+	if input == "" {
+		valid[false] = "422: No input found"
+		return
 	}
+
+	newString := util.ReverseString(input)
+	j.Write([]byte(newString))
+}
+
+//NewParser ...
+func NewParser(w http.ResponseWriter, contentType string) Parser {
+	l = logger.GetInstance()
+	switch contentType {
+	case "application/x-www-form-urlencoded":
+		return &revHandlerURLEncParser{Writer: w}
+	}
+	return nil
 }

@@ -4,100 +4,102 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
-	"github.com/wobeproject/data"
 	"github.com/wobeproject/logger"
-	"github.com/wobeproject/util"
 )
 
-var l = logger.GetInstance()
+var l logger.Logger
+var valid map[bool]string
 
 type page struct {
 	title string
 	body  []byte
 }
 
-//inputHandler ...
-func inputHandler(w http.ResponseWriter, r *http.Request) {
-	// var dataInput data.InputData
+var postForm = []byte(`<html>
+<head>
+<title></title>
+</head>
+<body>
+<form action="/" method="post">
+    Text to reverse:  <input type="text" name="input"> <br > <br >
+    <input type="submit" value="Input to Reverse">
+</form>
+</body>
+</html>`)
 
+//InputHandler ...
+func InputHandler(w http.ResponseWriter, r *http.Request) {
+	l = logger.GetInstance()
+	l.Info("Inside handler:", map[string]interface{}{
+		"Handler id":   3,
+		"Handler name": "inputHandler",
+	})
 	if r.Method != "POST" {
-		p := &page{title: "Welcome", body: []byte("Send POST request to reverse string")}
+		p := &page{title: "Welcome", body: postForm} //[]byte("Send POST request to reverse string")}
 		fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", p.title, p.body)
 		return
 	}
 
-	var b []byte
-	r.ParseForm()
-
-	switch r.Header.Get("Content-Type") {
-	case "application/json":
-
-		j := revHandlerJSONParser{Writer: w, d: data.InputData{}}
-		j.requestParse(r)
-		// l.Info("Content Type matched", map[string]interface{}{
-		// 	"Content-Type": "application/json",
-		// })
-		// buf := bytes.NewBuffer(make([]byte, 0))
-		// _, readErr := buf.ReadFrom(r.Body)
-		// util.FailOnError("reading resp body failed ", readErr)
-		// body := buf.Bytes()
-		// err := json.Unmarshal(body, &dataInput)
-		// util.FailOnError("json unmarshal failed ", err)
-		// l.Info("Reversing string", map[string]interface{}{
-		// 	"original string": dataInput.Input,
-		// })
-		// newString := util.ReverseString(dataInput.Input)
-		//
-		// b, err = json.Marshal(data.InputData{
-		// 	Input: newString,
-		// })
-		// util.FailOnError("json marshal failed ", err)
-
-	case "text/plain":
-
-		l.Info("Content-Type matched: text/plain", map[string]interface{}{})
-
-		v := r.FormValue("input")
-
-		newString := util.ReverseString(v)
-
-		b = []byte(newString)
-		l.Info("Reversed string", map[string]interface{}{
-			"newString": newString,
-		})
-	default:
-		temp := r.FormValue("input")
-		if temp == "" {
-			l.Warning("No match for Content-Type Found in Request", map[string]interface{}{
-				"Content-Type": r.Header.Get("Content-Type"),
-			})
-			b = []byte("ERROR No match for Content-Type Found in Request")
-		} else {
-			newString := util.ReverseString(temp)
-			b = []byte(newString)
-		}
+	rp := NewParser(w, r.Header.Get("Content-Type"))
+	if rp == nil {
+		valid[false] = "500: Internal Server error"
+		return
 	}
-	w.Write(b)
+	rp.RequestParse(r)
+
 }
 
-// func validationHandler(inner http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		switch r.Header.Get("Content-Type") {
-// 		case "application/json":
-//
-// 		case "text/plain":
-// 		default:
-// 		}
-//
-// 		inner.ServeHTTP(w, r)
-// 	})
-// }
+//ValidationHandler ...
+func ValidationHandler(inner http.Handler) http.Handler {
+	l = logger.GetInstance()
+	l.Info("Inside handler:", map[string]interface{}{
+		"Handler id":   2,
+		"Handler name": "validationHandler",
+	})
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		valid = make(map[bool]string)
+		defer invalidWriter(w, valid)
+		if r.Method != "POST" {
+			inner.ServeHTTP(w, r)
+			return
+		}
+		contentType := r.Header.Get("Content-Type")
+		if contentType == "" {
+			valid[false] = "400: Please provide Content-Type"
+			return
+		}
+		if contentType != "application/x-www-form-urlencoded" {
+			valid[false] = "415: Invalid Content-Type, only accepts application/x-www-form-urlencoded"
+			return
+		}
 
-func recoverHandler(inner http.Handler) http.Handler {
+		inner.ServeHTTP(w, r)
+	})
+}
+
+func invalidWriter(w http.ResponseWriter, valid map[bool]string) {
+	if msg := valid[false]; msg != "" {
+		status, _ := strconv.Atoi(msg[0:3])
+		w.WriteHeader(status)
+		w.Write([]byte(msg))
+		l.Error("Inside validation defer", map[string]interface{}{
+			"valid[false]": valid[false],
+			"valid[true]":  valid[true],
+		})
+	}
+}
+
+// RecoverHandler ....
+func RecoverHandler(inner http.Handler) http.Handler {
+	l = logger.GetInstance()
+	l.Info("Inside handler:", map[string]interface{}{
+		"Handler id":   1,
+		"Handler name": "recoverHandler",
+	})
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
-		//	l := logger.GetInstance()
 		defer func() {
 			r := recover()
 			if r != nil {
@@ -109,7 +111,7 @@ func recoverHandler(inner http.Handler) http.Handler {
 				default:
 					err = errors.New("Unknown error")
 				}
-				l.Panic("RECOVER HANDLER FAIL", map[string]interface{}{"ERR": err.Error()})
+				l.Error("RECOVER HANDLER FAIL", map[string]interface{}{"ERR": err.Error()})
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
 		}()

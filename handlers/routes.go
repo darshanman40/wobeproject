@@ -11,18 +11,19 @@ type route struct {
 	name        string
 	pattern     string
 	handlerFunc func(http.ResponseWriter, *http.Request)
+	handlers    []func(http.Handler) http.Handler
 }
 
-//AddRoutes ...
+//addRoutes ...
 func addRoutes(routes ...route) {
 	for _, r := range routes {
 		var handler http.Handler
-		handler = http.HandlerFunc(r.handlerFunc) //handlers.InputHandler)
-		handler = recoverHandler(handler)
-
+		handler = http.HandlerFunc(r.handlerFunc)
+		for _, h := range r.handlers {
+			handler = h(handler)
+		}
 		http.Handle(r.pattern, handler)
 	}
-
 }
 
 //InitHandlers ...
@@ -32,7 +33,10 @@ func InitHandlers() {
 		route{
 			"index",
 			"/",
-			inputHandler,
+			InputHandler,
+			[]func(http.Handler) http.Handler{
+				RecoverHandler, ValidationHandler,
+			},
 		},
 	)
 }
