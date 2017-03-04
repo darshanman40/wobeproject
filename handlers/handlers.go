@@ -32,6 +32,7 @@ var postForm = []byte(`<html>
 //InputHandler ...
 func InputHandler(w http.ResponseWriter, r *http.Request) {
 	l = logger.GetInstance()
+	contentType := r.Header.Get("Content-Type")
 	l.Info("Inside handler:", map[string]interface{}{
 		"Handler id":   3,
 		"Handler name": "inputHandler",
@@ -42,9 +43,9 @@ func InputHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rp := NewParser(w, r.Header.Get("Content-Type"))
+	rp := NewParser(w, contentType)
 	if rp == nil {
-		valid[false] = "500: Internal Server error"
+		valid[false] = "500: Internal Server error, Content-Type " + contentType + " not found"
 		return
 	}
 	rp.RequestParse(r)
@@ -55,7 +56,6 @@ func InputHandler(w http.ResponseWriter, r *http.Request) {
 func ValidationHandler(inner http.Handler) http.Handler {
 	l = logger.GetInstance()
 	l.Info("Inside handler:", map[string]interface{}{
-		"Handler id":   2,
 		"Handler name": "validationHandler",
 	})
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -85,8 +85,7 @@ func invalidWriter(w http.ResponseWriter, valid map[bool]string) {
 		w.WriteHeader(status)
 		w.Write([]byte(msg))
 		l.Error("Inside validation defer", map[string]interface{}{
-			"valid[false]": valid[false],
-			"valid[true]":  valid[true],
+			"Reason": valid[false],
 		})
 	}
 }
@@ -95,7 +94,6 @@ func invalidWriter(w http.ResponseWriter, valid map[bool]string) {
 func RecoverHandler(inner http.Handler) http.Handler {
 	l = logger.GetInstance()
 	l.Info("Inside handler:", map[string]interface{}{
-		"Handler id":   1,
 		"Handler name": "recoverHandler",
 	})
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -111,7 +109,7 @@ func RecoverHandler(inner http.Handler) http.Handler {
 				default:
 					err = errors.New("Unknown error")
 				}
-				l.Error("RECOVER HANDLER FAIL", map[string]interface{}{"ERR": err.Error()})
+				l.Error("RECOVER HANDLER FAIL", map[string]interface{}{"ERR": err})
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
 		}()

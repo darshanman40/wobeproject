@@ -1,8 +1,10 @@
 package logger
 
 import (
-	"io"
 	"log"
+	"sync"
+
+	"github.com/wobeproject/config"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -14,7 +16,6 @@ type logger struct {
 	logErr    *zap.Logger
 	logPanic  *zap.Logger
 	fileClose func()
-	io.Writer
 }
 
 type logMessages struct {
@@ -25,7 +26,9 @@ type logMessages struct {
 
 var logInfoChan, logWarnChan, logErrChan, logPanicChan chan logMessages
 
-// var mutex sync.Mutex
+var env string
+
+var mutex sync.Mutex
 
 var logr Logger
 
@@ -100,23 +103,26 @@ func (l *logger) CloseAll() {
 //GetInstance ...
 func GetInstance() Logger {
 	if logr == nil {
-		logr = NewLogger("")
+		logr = NewLogger(nil)
 	}
 	return logr
 }
 
-//NewLogger ...
-func NewLogger(flag string) Logger {
+//NewLogger2 ...
+func NewLogger2(l *config.AppConfig) Logger {
 	var ws zapcore.WriteSyncer
 	var f func()
 	var err error
 
 	var logInfo, logWarn, logErr, logPanic *zap.Logger
-	// mutex.Lock()
 
-	switch flag {
+	if l != nil {
+		env = l.Environment
+	}
+	ws, f, err = zap.Open("stderr")
+	switch env {
 	case "prod":
-		ws, f, err = zap.Open("logs/app.json", "stderr")
+		//ws, f, err =
 		logInfo = zap.New(
 			zapCoreConfig(ws, zapcore.InfoLevel),
 		)
@@ -138,7 +144,7 @@ func NewLogger(flag string) Logger {
 		)
 
 	case "debug":
-		ws, f, err = zap.Open("logs/app.json", "stderr")
+		// ws, f, err = zap.Open("stderr")
 		logInfo = zap.New(
 			zapCoreConfig(ws, zapcore.InfoLevel),
 		)
@@ -162,7 +168,7 @@ func NewLogger(flag string) Logger {
 			zap.AddCallerSkip(4),
 		)
 	case "dev":
-		ws, f, err = zap.Open("logs/app.json", "stderr")
+		// ws, f, err = zap.Open("stderr")
 		logInfo, _ = zap.NewDevelopment(zap.Development(),
 			zap.AddCaller(),
 			zap.AddCallerSkip(1),
@@ -186,7 +192,7 @@ func NewLogger(flag string) Logger {
 			zap.AddCallerSkip(4),
 		)
 	default:
-		_, f, err = zap.Open("stderr")
+		// _, f, err = zap.Open("stderr")
 		logInfo = zap.NewNop()
 		logErr = zap.NewNop()
 		logWarn = zap.NewNop()
@@ -208,8 +214,89 @@ func NewLogger(flag string) Logger {
 	logErrChan = make(chan logMessages)
 	logPanicChan = make(chan logMessages)
 	go LogRoutine()
-	// defer mutex.Unlock()
 	return logr
+}
+
+//NewLogger ...
+func NewLogger(l map[string]config.Log) Logger {
+	logInfoChan = make(chan logMessages)
+	logWarnChan = make(chan logMessages)
+	logErrChan = make(chan logMessages)
+	logPanicChan = make(chan logMessages)
+	defer LogRoutine()
+	ws, f, err := zap.Open("stderr")
+	if err != nil {
+		log.Fatal("Error at logger, ", err)
+	}
+	if l == nil {
+		log.Println(" log config is nil ")
+		logr = &logger{
+			logInfo:   zap.NewNop(),
+			logWarn:   zap.NewNop(),
+			logErr:    zap.NewNop(),
+			logPanic:  zap.NewNop(),
+			fileClose: f,
+		}
+		return logr
+	}
+
+	logr = &logger{
+		logInfo:   GetZapLogger(ws, l["info"]),
+		logWarn:   GetZapLogger(ws, l["warn"]),
+		logErr:    GetZapLogger(ws, l["err"]),
+		logPanic:  GetZapLogger(ws, l["panic"]),
+		fileClose: f,
+	}
+
+	return logr
+}
+
+//GetZapLogger ..
+func GetZapLogger(ws zapcore.WriteSyncer, l config.Log) *zap.Logger {
+	var z []zap.Option
+
+	var zc zapcore.Core
+	var zl zapcore.Level
+	//i := 0
+	if l.Tracelevel != "" {
+		zl = getLevel(l.Tracelevel)
+	}
+
+	if l.Erroroutput {
+		z = append(z, zap.ErrorOutput(ws))
+		//	i++
+	}
+
+	if l.Stacktrace {
+		z = append(z, zap.AddStacktrace(zl))
+		//i++
+	}
+
+	if l.Caller {
+		z = append(z, zap.AddCaller())
+		//i++
+	}
+
+	z = append(z, zap.AddCallerSkip(l.CallerSkip))
+
+	zc = zapCoreConfig(ws, zl)
+	newZap := zap.New(zc, z...)
+	return newZap
+
+}
+
+func getLevel(s string) zapcore.Level {
+	switch s {
+	case "infolevel":
+		return zapcore.InfoLevel
+	case "warnlevel":
+		return zapcore.WarnLevel
+	case "errorlevel":
+		return zapcore.ErrorLevel
+	case "paniclevel":
+		return zapcore.PanicLevel
+	}
+	return 10
 }
 
 func zapCoreConfig(ws zapcore.WriteSyncer, l zapcore.Level) zapcore.Core {
@@ -236,28 +323,41 @@ func encoderConfig() zapcore.EncoderConfig {
 
 //LogRoutine ...
 func LogRoutine() {
-	// go func() {
-	for {
-		// mutex.Lock()
-		select {
-		case l := <-logInfoChan:
-			opts := GetFields(l.fields)
-			l.log.Info(l.msg, opts...)
+	// t := time.Tick(1 * time.Hour)
 
-		case l := <-logWarnChan:
-			opts := GetFields(l.fields)
-			l.log.Warn(l.msg, opts...)
+	go func() {
+		for {
+			select {
+			case l := <-logInfoChan:
+				opts := GetFields(l.fields)
+				l.log.Info(l.msg, opts...)
 
-		case l := <-logErrChan:
-			opts := GetFields(l.fields)
-			l.log.Error(l.msg, opts...)
+			case l := <-logWarnChan:
+				opts := GetFields(l.fields)
+				l.log.Warn(l.msg, opts...)
 
-		case l := <-logPanicChan:
-			opts := GetFields(l.fields)
-			l.log.Panic(l.msg, opts...)
+			case l := <-logErrChan:
+				opts := GetFields(l.fields)
+				l.log.Error(l.msg, opts...)
 
+			case l := <-logPanicChan:
+				opts := GetFields(l.fields)
+				l.log.Panic(l.msg, opts...)
+
+				// case <-t:
+				// 	mutex.Lock()
+				// 	// getFileName()
+				// 	logr = NewLogger(env)
+				// 	mutex.Unlock()
+			}
 		}
-		// mutex.Unlock()
-	}
-	// }()
+	}()
 }
+
+// func getFileName() {
+// 	//filepath = "/go/bin/logs/wobeproject/" + time.Now().String() + ".log"
+// 	// _, err := os.Create(filepath)
+// 	// if err != nil {
+// 	// 	log.Fatal("file couldn't create ", err)
+// 	// }
+// }

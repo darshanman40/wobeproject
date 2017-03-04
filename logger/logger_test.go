@@ -2,7 +2,6 @@ package logger_test
 
 import (
 	"errors"
-	"log"
 	"testing"
 
 	"github.com/wobeproject/logger"
@@ -13,37 +12,35 @@ import (
 func Test_GetFields(t *testing.T) {
 	err := errors.New("custom error")
 	originalFields := []zapcore.Field{
-		zap.Int("int", 9),
-		zap.Int8("int8", 1),
-		zap.Int16("int16", 16),
-		zap.Int32("int32", 32),
-		zap.Int64("int64", 64),
-		zap.String("string", "stringdata"),
-		zap.Float32("float32", 2.56455),
-		zap.Float64("float64", 3.5565645),
+		zap.Int("intKey", 9),
+		zap.Int8("int8Key", 1),
+		zap.Int16("int16Key", 16),
+		zap.Int32("int32Key", 32),
+		zap.Int64("int64Key", 64),
+		zap.String("stringKey", "stringdata"),
+		zap.Float32("float32Key", 2.56455),
+		zap.Float64("float64Key", 3.5565645),
 		zap.Error(err),
 	}
 
 	m := map[string]interface{}{
-		"string":  "stringdata",
-		"int":     int(9),
-		"int8":    int8(1),
-		"int16":   int16(16),
-		"int32":   int32(32),
-		"int64":   int64(64),
-		"float32": float32(2.56455),
-		"float64": float64(3.5565645),
-		"err":     err,
+		"stringKey":  "stringdata",
+		"intKey":     int(9),
+		"int8Key":    int8(1),
+		"int16Key":   int16(16),
+		"int32Key":   int32(32),
+		"int64Key":   int64(64),
+		"float32Key": float32(2.56455),
+		"float64Key": float64(3.5565645),
+		"errKey":     err,
 	}
 	fields := logger.GetFields(m)
-	log.Println("fields: ", fields)
-	log.Println("originalFields: ", originalFields)
-	if !testEq(fields, originalFields) {
+	if !testEqField(fields, originalFields) {
 		t.Fatalf("list mismatch")
 	}
 }
 
-func testEq(a, b []zapcore.Field) bool {
+func testEqField(a, b []zapcore.Field) bool {
 
 	if a == nil && b == nil {
 		return true

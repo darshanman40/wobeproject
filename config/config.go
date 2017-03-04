@@ -8,26 +8,24 @@ import (
 
 //AppConfig ...
 type AppConfig struct {
-	Enabled  bool `toml:"Enabled"`
-	Port     string
-	URLPath  string
-	Hosts    []string
-	Encoding string
-	LoadGen  LoadGen `toml:"loadgen"`
+	Environment string
+	Log         map[string]Log
 }
 
-//LoadGen ...
-type LoadGen struct {
-	TPS      int64  `toml:"tps"`
-	Duration string `toml:"duration"`
+//Log ...
+type Log struct {
+	Tracelevel  string //= ""
+	Stacktrace  bool   //=  false
+	Erroroutput bool   //= false
+	Caller      bool   //= false
+	CallerSkip  int    `toml:"caller_skip"`
 }
 
 var apps map[string]AppConfig
 
 //Load toml file
-func Load(env string) {
-	if _, err := toml.DecodeFile("config/"+env+".toml", &apps); err != nil { //.Decode(tomlData, &conf); err != nil {
-		// handle error
+func Load(filepath string) {
+	if _, err := toml.DecodeFile(filepath, &apps); err != nil { //.Decode(tomlData, &conf); err != nil {
 		log.Fatal("ERR: ", err)
 	}
 	log.Println(apps)
@@ -38,7 +36,23 @@ func GetApp(a string) *AppConfig {
 	app, ok := apps[a]
 
 	if !ok {
-		return &AppConfig{} //, errors.New("Config not found")
+		return &AppConfig{}
 	}
 	return &app
+}
+
+//GetLog ...
+func GetLog(env string) *map[string]Log {
+	app, ok := apps[env]
+
+	if !ok {
+		return nil
+	}
+	return &app.Log
+	// appLog, found := app.Log[s]
+	//
+	// if !found {
+	// 	return nil
+	// }
+	// return &appLog
 }
