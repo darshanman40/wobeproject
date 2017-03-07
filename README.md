@@ -12,7 +12,7 @@ The server should
 
 "albalbalb"
 
-The server should run on a docker container and you should be able to scale the number of containers horizontally.
+The server should run on a docker container.
 
 ## How to run
 
@@ -45,9 +45,7 @@ This will keep the server on `http://localhost:6060`
 ## About project
 It has two flags, <br>
 
-1) -env: environment of project. It pulls environment specific configuration. It supports "dev", "debug" and "prod" as values.
-
-
+1) -env: environment of project. It pulls environment specific configuration. It supports "dev", "debug" and "prod" as values. Following table shows the description and some of values from `config.toml` file.
 
 <table>
 <tr>
