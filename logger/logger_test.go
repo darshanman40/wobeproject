@@ -40,6 +40,7 @@ func Test_GetFields(t *testing.T) {
 	}
 }
 
+//testEqField is created to compare unorganized slice of zapcore.Field
 func testEqField(a, b []zapcore.Field) bool {
 
 	if a == nil && b == nil {

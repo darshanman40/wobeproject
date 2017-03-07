@@ -13,7 +13,6 @@ import (
 	"github.com/wobeproject/logger"
 )
 
-//var l logger.Logger
 const port = ":8081"
 
 func main() {
@@ -25,25 +24,15 @@ func main() {
 	config.Load(filepath)
 	cfg := config.GetApp(env)
 
-	//.GetLog(env)
 	if cfg == nil {
 		log.Fatal("config not found, ", env)
 	}
 
-	// for i, cfgL := range cfg.Log {
-	// 	log.Println(i + " ")
-	// 	log.Print(cfgL)
-	// }
-	//config.GetLog(a, s)
-	//log.Println(config.GetLog(env, "info"))
-	log.Println("configLog "+env+"\n", cfg.Log)
 	l := logger.NewLogger(cfg.Log)
 
-	l.Info("Server Start", map[string]interface{}{
+	l.Info("Server is starting", map[string]interface{}{
 		"environment": env,
-	})
-	l.Warning("Server Port", map[string]interface{}{
-		"port": port,
+		"port":        port,
 	})
 
 	// override ctrl + C and  close logger files

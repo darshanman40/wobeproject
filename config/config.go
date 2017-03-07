@@ -6,29 +6,28 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-//AppConfig ...
+//AppConfig App configuration
 type AppConfig struct {
 	Environment string
 	Log         map[string]Log
 }
 
-//Log ...
+//Log configuration
 type Log struct {
-	Tracelevel  string //= ""
-	Stacktrace  bool   //=  false
-	Erroroutput bool   //= false
-	Caller      bool   //= false
-	CallerSkip  int    `toml:"caller_skip"`
+	Tracelevel  string
+	Stacktrace  bool
+	Erroroutput bool
+	Caller      bool
+	CallerSkip  int `toml:"caller_skip"`
 }
 
 var apps map[string]AppConfig
 
 //Load toml file
 func Load(filepath string) {
-	if _, err := toml.DecodeFile(filepath, &apps); err != nil { //.Decode(tomlData, &conf); err != nil {
+	if _, err := toml.DecodeFile(filepath, &apps); err != nil {
 		log.Fatal("ERR: ", err)
 	}
-	log.Println(apps)
 }
 
 //GetApp returns AppConfig for particular app
@@ -41,7 +40,7 @@ func GetApp(a string) *AppConfig {
 	return &app
 }
 
-//GetLog ...
+//GetLog Log config from certain app environment
 func GetLog(env string) *map[string]Log {
 	app, ok := apps[env]
 
@@ -49,10 +48,4 @@ func GetLog(env string) *map[string]Log {
 		return nil
 	}
 	return &app.Log
-	// appLog, found := app.Log[s]
-	//
-	// if !found {
-	// 	return nil
-	// }
-	// return &appLog
 }

@@ -15,6 +15,7 @@ type logger struct {
 	logWarn   *zap.Logger
 	logErr    *zap.Logger
 	logPanic  *zap.Logger
+	logDebug  *zap.Logger
 	fileClose func()
 }
 
@@ -24,83 +25,86 @@ type logMessages struct {
 	fields map[string]interface{}
 }
 
-var logInfoChan, logWarnChan, logErrChan, logPanicChan chan logMessages
+var (
+	logInfoChan, logWarnChan, logErrChan, logPanicChan chan logMessages
 
-var env string
+	env string
 
-var mutex sync.Mutex
+	mutex sync.Mutex
 
-var logr Logger
+	logr Logger
+)
 
-//Logger ...
+//Logger to implement zap logger
 type Logger interface {
 	Info(string, map[string]interface{})
 	Warning(string, map[string]interface{})
 	Error(string, map[string]interface{})
 	Panic(string, map[string]interface{})
+	Debug(string, map[string]interface{})
 	CloseAll()
 }
 
 func (l *logger) Info(msg string, opts map[string]interface{}) {
-	// zapOpts := GetFields(opts)
-	// l.logInfo.Info(msg, zapOpts...)
-	logInfoChan <- logMessages{log: l.logInfo, msg: msg, fields: opts}
+	zapOpts := GetFields(opts)
+	l.logInfo.Info(msg, zapOpts...)
 }
 
 func (l *logger) Warning(msg string, opts map[string]interface{}) {
-	// zapOpts := GetFields(opts)
-	// l.logWarn.Warn(msg, zapOpts...)
-	logWarnChan <- logMessages{log: l.logWarn, msg: msg, fields: opts}
+	zapOpts := GetFields(opts)
+	l.logWarn.Warn(msg, zapOpts...)
 }
 
 func (l *logger) Error(msg string, opts map[string]interface{}) {
-	// zapOpts := GetFields(opts)
-	// l.logErr.Error(msg, zapOpts...)
-	logErrChan <- logMessages{log: l.logErr, msg: msg, fields: opts}
+	zapOpts := GetFields(opts)
+	l.logErr.Error(msg, zapOpts...)
 }
 
 func (l *logger) Panic(msg string, opts map[string]interface{}) {
-	// zapOpts := GetFields(opts)
-	// l.logPanic.Panic(msg, zapOpts...)
-	logPanicChan <- logMessages{log: l.logPanic, msg: msg, fields: opts}
+	zapOpts := GetFields(opts)
+	l.logPanic.Panic(msg, zapOpts...)
 }
 
-//GetFields ...
-func GetFields(opts map[string]interface{}) []zapcore.Field {
-	zapOptions := make([]zapcore.Field, len(opts))
+func (l *logger) Debug(msg string, opts map[string]interface{}) {
+	zapOpts := GetFields(opts)
+	l.logDebug.Debug(msg, zapOpts...)
+}
+
+//GetFields conver maps into zapcore.Fields
+func GetFields(fields map[string]interface{}) []zapcore.Field {
+	zapFields := make([]zapcore.Field, len(fields))
 	i := 0
-	for k, v := range opts {
+	for k, v := range fields {
 		switch v := v.(type) {
 		case int:
-			zapOptions[i] = zap.Int(k, v)
+			zapFields[i] = zap.Int(k, v)
 		case int8:
-			zapOptions[i] = zap.Int8(k, v)
+			zapFields[i] = zap.Int8(k, v)
 		case int16:
-			zapOptions[i] = zap.Int16(k, v)
+			zapFields[i] = zap.Int16(k, v)
 		case int32:
-			zapOptions[i] = zap.Int32(k, v)
+			zapFields[i] = zap.Int32(k, v)
 		case int64:
-			zapOptions[i] = zap.Int64(k, v)
+			zapFields[i] = zap.Int64(k, v)
 		case string:
-			zapOptions[i] = zap.String(k, v)
+			zapFields[i] = zap.String(k, v)
 		case float32:
-			zapOptions[i] = zap.Float32(k, v)
+			zapFields[i] = zap.Float32(k, v)
 		case float64:
-			zapOptions[i] = zap.Float64(k, v)
+			zapFields[i] = zap.Float64(k, v)
 		case error:
-			zapOptions[i] = zap.Error(v)
-
+			zapFields[i] = zap.Error(v)
 		}
 		i++
 	}
-	return zapOptions
+	return zapFields
 }
 
 func (l *logger) CloseAll() {
 	l.fileClose()
 }
 
-//GetInstance ...
+//GetInstance to retrieve single instance of Logger
 func GetInstance() Logger {
 	if logr == nil {
 		logr = NewLogger(nil)
@@ -108,146 +112,40 @@ func GetInstance() Logger {
 	return logr
 }
 
-//NewLogger2 ...
-func NewLogger2(l *config.AppConfig) Logger {
-	var ws zapcore.WriteSyncer
-	var f func()
-	var err error
-
-	var logInfo, logWarn, logErr, logPanic *zap.Logger
-
-	if l != nil {
-		env = l.Environment
-	}
-	ws, f, err = zap.Open("stderr")
-	switch env {
-	case "prod":
-		//ws, f, err =
-		logInfo = zap.New(
-			zapCoreConfig(ws, zapcore.InfoLevel),
-		)
-
-		logWarn = zap.New(
-			zapCoreConfig(ws, zapcore.WarnLevel),
-		)
-
-		logErr = zap.New(
-			zapCoreConfig(ws, zapcore.ErrorLevel),
-			zap.AddCaller(),
-			zap.AddCallerSkip(2),
-		)
-
-		logPanic = zap.New(
-			zapCoreConfig(ws, zapcore.PanicLevel),
-			zap.AddCaller(),
-			zap.AddCallerSkip(4),
-		)
-
-	case "debug":
-		// ws, f, err = zap.Open("stderr")
-		logInfo = zap.New(
-			zapCoreConfig(ws, zapcore.InfoLevel),
-		)
-
-		logWarn = zap.New(
-			zapCoreConfig(ws, zapcore.WarnLevel),
-			zap.AddCaller(),
-			zap.AddCallerSkip(1),
-		)
-
-		logErr = zap.New(
-			zapCoreConfig(ws, zapcore.ErrorLevel),
-			zap.AddCaller(),
-			zap.AddStacktrace(zapcore.ErrorLevel),
-			zap.AddCallerSkip(2),
-		)
-
-		logPanic = zap.New(
-			zapCoreConfig(ws, zapcore.PanicLevel),
-			zap.AddCaller(),
-			zap.AddCallerSkip(4),
-		)
-	case "dev":
-		// ws, f, err = zap.Open("stderr")
-		logInfo, _ = zap.NewDevelopment(zap.Development(),
-			zap.AddCaller(),
-			zap.AddCallerSkip(1),
-		)
-
-		logWarn, _ = zap.NewDevelopment(zap.Development(),
-			zap.AddCaller(),
-			zap.AddCallerSkip(1),
-		)
-
-		logErr, _ = zap.NewDevelopment(zap.Development(),
-			zap.AddStacktrace(zapcore.ErrorLevel),
-			zap.ErrorOutput(ws),
-			zap.AddCaller(),
-			zap.AddCallerSkip(2),
-		)
-
-		logPanic, _ = zap.NewDevelopment(zap.Development(),
-			zap.AddStacktrace(zapcore.PanicLevel),
-			zap.AddCaller(),
-			zap.AddCallerSkip(4),
-		)
-	default:
-		// _, f, err = zap.Open("stderr")
-		logInfo = zap.NewNop()
-		logErr = zap.NewNop()
-		logWarn = zap.NewNop()
-		logPanic = zap.NewNop()
-	}
-	if err != nil {
-		log.Fatal("Can't open file at logger ", err)
-	}
-	logr = &logger{
-		logInfo:   logInfo,
-		logWarn:   logWarn,
-		logErr:    logErr,
-		logPanic:  logPanic,
-		fileClose: f,
-	}
-
-	logInfoChan = make(chan logMessages)
-	logWarnChan = make(chan logMessages)
-	logErrChan = make(chan logMessages)
-	logPanicChan = make(chan logMessages)
-	go LogRoutine()
-	return logr
-}
-
-//NewLogger ...
+//NewLogger Get new instance of Logger
 func NewLogger(l map[string]config.Log) Logger {
-	logInfoChan = make(chan logMessages)
-	logWarnChan = make(chan logMessages)
-	logErrChan = make(chan logMessages)
-	logPanicChan = make(chan logMessages)
-	defer LogRoutine()
+
 	ws, f, err := zap.Open("stderr")
 	if err != nil {
 		log.Fatal("Error at logger, ", err)
 	}
 	if l == nil {
-		log.Println(" log config is nil ")
 		logr = &logger{
 			logInfo:   zap.NewNop(),
 			logWarn:   zap.NewNop(),
 			logErr:    zap.NewNop(),
 			logPanic:  zap.NewNop(),
+			logDebug:  zap.NewNop(),
 			fileClose: f,
 		}
-		return logr
+
+	} else {
+
+		logr = &logger{
+			logInfo:   GetZapLogger(ws, l["info"]),
+			logWarn:   GetZapLogger(ws, l["warn"]),
+			logErr:    GetZapLogger(ws, l["err"]),
+			logPanic:  GetZapLogger(ws, l["panic"]),
+			logDebug:  GetZapLogger(ws, l["debug"]),
+			fileClose: f,
+		}
 	}
 
-	logr = &logger{
-		logInfo:   GetZapLogger(ws, l["info"]),
-		logWarn:   GetZapLogger(ws, l["warn"]),
-		logErr:    GetZapLogger(ws, l["err"]),
-		logPanic:  GetZapLogger(ws, l["panic"]),
-		fileClose: f,
-	}
-
+	logInfoChan = make(chan logMessages)
+	logWarnChan = make(chan logMessages)
+	logErrChan = make(chan logMessages)
+	logPanicChan = make(chan logMessages)
+	LogRoutine()
 	return logr
 }
 
@@ -257,24 +155,20 @@ func GetZapLogger(ws zapcore.WriteSyncer, l config.Log) *zap.Logger {
 
 	var zc zapcore.Core
 	var zl zapcore.Level
-	//i := 0
 	if l.Tracelevel != "" {
 		zl = getLevel(l.Tracelevel)
 	}
 
 	if l.Erroroutput {
 		z = append(z, zap.ErrorOutput(ws))
-		//	i++
 	}
 
 	if l.Stacktrace {
 		z = append(z, zap.AddStacktrace(zl))
-		//i++
 	}
 
 	if l.Caller {
 		z = append(z, zap.AddCaller())
-		//i++
 	}
 
 	z = append(z, zap.AddCallerSkip(l.CallerSkip))
@@ -295,6 +189,8 @@ func getLevel(s string) zapcore.Level {
 		return zapcore.ErrorLevel
 	case "paniclevel":
 		return zapcore.PanicLevel
+	case "debuglevel":
+		return zapcore.DebugLevel
 	}
 	return 10
 }
@@ -323,8 +219,6 @@ func encoderConfig() zapcore.EncoderConfig {
 
 //LogRoutine ...
 func LogRoutine() {
-	// t := time.Tick(1 * time.Hour)
-
 	go func() {
 		for {
 			select {
@@ -343,21 +237,7 @@ func LogRoutine() {
 			case l := <-logPanicChan:
 				opts := GetFields(l.fields)
 				l.log.Panic(l.msg, opts...)
-
-				// case <-t:
-				// 	mutex.Lock()
-				// 	// getFileName()
-				// 	logr = NewLogger(env)
-				// 	mutex.Unlock()
 			}
 		}
 	}()
 }
-
-// func getFileName() {
-// 	//filepath = "/go/bin/logs/wobeproject/" + time.Now().String() + ".log"
-// 	// _, err := os.Create(filepath)
-// 	// if err != nil {
-// 	// 	log.Fatal("file couldn't create ", err)
-// 	// }
-// }

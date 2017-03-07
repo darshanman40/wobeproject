@@ -5,45 +5,71 @@ environment = "dev"
 [dev.log.info]
 tracelevel = "infolevel"
 stacktrace =  false
-erroroutput = false
-caller = false
-caller_skip= 1
+erroroutput = true
+caller = true
+caller_skip = 1
 [dev.log.warn]
 tracelevel = "warnlevel"
 stacktrace =  false
-erroroutput = false
-caller = false
-caller_skip= 1
-
+erroroutput = true
+caller = true
+caller_skip = 1
 [dev.log.err]
 tracelevel = "errorlevel"
 stacktrace =  false
 erroroutput = true
 caller = true
-caller_skip=2
+caller_skip =  2
 [dev.log.panic]
+tracelevel = "paniclevel"
+stacktrace =  false
+erroroutput = true
+caller = true
+caller_skip = 1
+
+
+[prod]
+environment = "prod"
+[prod.log.info]
+tracelevel = "infolevel"
+stacktrace =  false
+erroroutput = false
+caller = false
+caller_skip = 0
+[prod.log.warn]
+tracelevel = "warnlevel"
+stacktrace =  false
+erroroutput = true
+caller = true
+caller_skip = 1
+[prod.log.err]
+tracelevel = "errorlevel"
+stacktrace =  false
+erroroutput = false
+caller = true
+caller_skip = 2
+[prod.log.panic]
 tracelevel = "paniclevel"
 stacktrace =  false
 erroroutput = true
 caller = true
 caller_skip = 2
 
-[prod]
-environment = "prod"
 
+[debug]
+environment="prod"
 [debug.log.info]
 tracelevel = "infolevel"
 stacktrace =  false
 erroroutput = false
 caller = false
-caller_skip= 0
+caller_skip= 1
 [debug.log.warn]
 tracelevel = "warnlevel"
 stacktrace =  false
 erroroutput = true
 caller = true
 caller_skip= 1
-
 [debug.log.err]
 tracelevel = "errorlevel"
 stacktrace =  true
@@ -56,3 +82,9 @@ stacktrace =  true
 erroroutput = true
 caller = true
 caller_skip = 2
+[debug.log.debug]
+tracelevel = "debuglevel"
+stacktrace =  false
+erroroutput = true
+caller = true
+caller_skip = 1

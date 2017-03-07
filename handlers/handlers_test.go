@@ -46,7 +46,7 @@ func Test_InputHandler(t *testing.T) {
 	r, _ = http.NewRequest("POST", "/", strings.NewReader(form.Encode()))
 
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	handler := http.HandlerFunc(handlers.InputHandler)
+	handler := http.HandlerFunc(handlers.IndexHandler)
 
 	handler.ServeHTTP(rr, r)
 
@@ -76,7 +76,7 @@ func Test_IPHandler400(t *testing.T) {
 	initTest()
 	form.Add("input", "")
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	inHandler := http.HandlerFunc(handlers.InputHandler)
+	inHandler := http.HandlerFunc(handlers.IndexHandler)
 	handler := handlers.ValidationHandler(inHandler)
 	handler.ServeHTTP(rr, r)
 	if rr.Code != 422 {
@@ -88,7 +88,7 @@ func Test_ValidationHandler415(t *testing.T) {
 	initTest()
 	form.Add("input", "dabf")
 	r.Header.Add("Content-Type", "application/json")
-	inHandler := http.HandlerFunc(handlers.InputHandler)
+	inHandler := http.HandlerFunc(handlers.IndexHandler)
 	handler := handlers.ValidationHandler(inHandler)
 	handler.ServeHTTP(rr, r)
 	if rr.Code != 415 {

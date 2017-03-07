@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"io"
 	"net/http"
 
@@ -19,14 +20,14 @@ type revHandlerURLEncParser struct {
 }
 
 func (j *revHandlerURLEncParser) RequestParse(r *http.Request) {
-	l.Info("Content Type matched", map[string]interface{}{
+	l.Debug("Content Type matched", map[string]interface{}{
 		"Content-Type": r.Header.Get("Content-Type"),
 	})
 
 	r.ParseForm()
 	input := r.Form.Get("input")
 	if input == "" {
-		valid[false] = "422: No input found"
+		httpErr = errors.New("422: No input found")
 		return
 	}
 

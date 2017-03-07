@@ -14,13 +14,27 @@ type route struct {
 	handlers    []func(http.Handler) http.Handler
 }
 
+var routes = []route{
+	route{
+		"index",
+		"/",
+		IndexHandler,
+		[]func(http.Handler) http.Handler{
+			ValidationHandler, RecoverHandler,
+		},
+	},
+}
+
 //addRoutes ...
 func addRoutes(routes ...route) {
 	for _, r := range routes {
+		l.Debug("Routes", map[string]interface{}{
+			"Adding routes": r.name,
+		})
 		var handler http.Handler
 		handler = http.HandlerFunc(r.handlerFunc)
-		for _, h := range r.handlers {
-			handler = h(handler)
+		for i := range r.handlers {
+			handler = r.handlers[i](handler)
 		}
 		http.Handle(r.pattern, handler)
 	}
@@ -29,14 +43,6 @@ func addRoutes(routes ...route) {
 //InitHandlers ...
 func InitHandlers() {
 	l = logger.GetInstance()
-	addRoutes(
-		route{
-			"index",
-			"/",
-			InputHandler,
-			[]func(http.Handler) http.Handler{
-				RecoverHandler, ValidationHandler,
-			},
-		},
-	)
+	addRoutes(routes...)
+
 }
