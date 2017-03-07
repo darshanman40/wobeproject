@@ -3,12 +3,12 @@
 ## Project Requirement:
 The server should
 
-#1. Accept a POST request of the below form,
+1. Accept a POST request of the below form,
 <br>{
 "input": "blablabla"
 }
 
-#2. Response should be the reverse of the "input" string
+2. Response should be the reverse of the "input" string
 
 "albalbalb"
 
@@ -45,7 +45,7 @@ This will keep the server on `http://localhost:6060`
 ## About project
 It has two flags, <br>
 
-#1 -env: environment of project. It pulls environment specific configuration. It supports "dev", "debug" and "prod" as values.
+1) -env: environment of project. It pulls environment specific configuration. It supports "dev", "debug" and "prod" as values.
 
 
 
@@ -94,4 +94,4 @@ It has two flags, <br>
 
 </table>
 
-#2 -config: To provide config file with path. Default value doesn't work in docker container, so I added working value in Dockerfile
+2) -config: To provide config file with path. Default value doesn't work in docker container, so I added working value in Dockerfile
