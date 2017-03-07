@@ -39,20 +39,20 @@ caller_skip = 0
 [prod.log.warn]
 tracelevel = "warnlevel"
 stacktrace =  false
-erroroutput = true
-caller = true
+erroroutput = false
+caller = false
 caller_skip = 1
 [prod.log.err]
 tracelevel = "errorlevel"
 stacktrace =  false
 erroroutput = false
-caller = true
+caller = false
 caller_skip = 2
 [prod.log.panic]
 tracelevel = "paniclevel"
 stacktrace =  false
-erroroutput = true
-caller = true
+erroroutput = false
+caller = false
 caller_skip = 2
 
 
