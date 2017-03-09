@@ -145,7 +145,7 @@ func NewLogger(l map[string]config.Log) Logger {
 	logWarnChan = make(chan logMessages)
 	logErrChan = make(chan logMessages)
 	logPanicChan = make(chan logMessages)
-	LogRoutine()
+	// LogRoutine()
 	return logr
 }
 
