@@ -1,6 +1,7 @@
 #!/bin/bash
 
-go get ./...
+# go get ./...
+
 
 test=`go test ./...`
 test_fail=`echo $test | grep "FAIL"`

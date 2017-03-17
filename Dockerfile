@@ -5,9 +5,14 @@ FROM golang
 # Copy the local package files to the container's workspace.
 ADD . /go/src/github.com/wobeproject
 
-# RUN export config_path="/go/src/github.com/wobeproject/config/config.toml"
+WORKDIR /go/src/github.com/wobeproject
 
-RUN cd src/github.com/wobeproject && ./testscript.sh
+RUN go get -u github.com/FiloSottile/gvt
+
+RUN ./testscript.sh
+#  && echo $GOPATH && export GOPATH=/go
+
+# RUN cd src/github.com/wobeproject && gvt restore
 
 # Build the outyet command inside the container.
 # (You may fetch or manage dependencies here,
@@ -15,8 +20,10 @@ RUN cd src/github.com/wobeproject && ./testscript.sh
 # RUN go build main.go -env prod && go install main
 
 RUN go install ./...
+
 # RUN find / -name "config.toml"
 # Run the outyet command by default when the container starts.
+
 ENTRYPOINT ["/go/bin/wobeproject","--config","/go/src/github.com/wobeproject/config/config.toml"]
 
 # Document that the service listens on port 8080.

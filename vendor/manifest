@@ -1,0 +1,75 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "github.com/BurntSushi/toml",
+			"repository": "https://github.com/BurntSushi/toml",
+			"vcs": "git",
+			"revision": "e643e9ef00b049d75de26e61109c5ea01885cd21",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "go.uber.org/atomic",
+			"repository": "https://github.com/uber-go/atomic",
+			"vcs": "git",
+			"revision": "3b8db5e93c4c02efbc313e17b2e796b0914a01fb",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "go.uber.org/zap/buffer",
+			"repository": "https://github.com/uber-go/zap",
+			"vcs": "git",
+			"revision": "179e456766f6ba6d1006f432f90d52ecb6296e84",
+			"branch": "master",
+			"path": "buffer",
+			"notests": true
+		},
+		{
+			"importpath": "go.uber.org/zap/internal/bufferpool",
+			"repository": "https://github.com/uber-go/zap",
+			"vcs": "git",
+			"revision": "179e456766f6ba6d1006f432f90d52ecb6296e84",
+			"branch": "master",
+			"path": "internal/bufferpool",
+			"notests": true
+		},
+		{
+			"importpath": "go.uber.org/zap/internal/color",
+			"repository": "https://github.com/uber-go/zap",
+			"vcs": "git",
+			"revision": "179e456766f6ba6d1006f432f90d52ecb6296e84",
+			"branch": "master",
+			"path": "internal/color",
+			"notests": true
+		},
+		{
+			"importpath": "go.uber.org/zap/internal/exit",
+			"repository": "https://github.com/uber-go/zap",
+			"vcs": "git",
+			"revision": "179e456766f6ba6d1006f432f90d52ecb6296e84",
+			"branch": "master",
+			"path": "internal/exit",
+			"notests": true
+		},
+		{
+			"importpath": "go.uber.org/zap/internal/multierror",
+			"repository": "https://github.com/uber-go/zap",
+			"vcs": "git",
+			"revision": "179e456766f6ba6d1006f432f90d52ecb6296e84",
+			"branch": "master",
+			"path": "internal/multierror",
+			"notests": true
+		},
+		{
+			"importpath": "go.uber.org/zap/zapcore",
+			"repository": "https://github.com/uber-go/zap",
+			"vcs": "git",
+			"revision": "179e456766f6ba6d1006f432f90d52ecb6296e84",
+			"branch": "master",
+			"path": "/zapcore",
+			"notests": true
+		}
+	]
+}
